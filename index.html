@@ -377,9 +377,8 @@ async function criarLink(){
   try{
     const r=await fetch(`${PROXY}?path=/payment-link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(!r.ok)throw new Error(JSON.stringify(d));
     const id=d.link_id||d.id;
-    if(!id)throw new Error('ID não retornado: '+JSON.stringify(d));
+    if(!id)throw new Error(d.message||d.error||JSON.stringify(d));
     const url=window.location.origin+window.location.pathname+'?id='+id;
     document.getElementById('lg-id').textContent=id;
     document.getElementById('lg-url').textContent=url;

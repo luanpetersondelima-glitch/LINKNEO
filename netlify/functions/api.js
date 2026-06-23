@@ -4,7 +4,7 @@
 const PAYSTORE_BASE = 'https://backendphoebus.paystore.com.br/ecommerce/v1';
 
 // ⚠️ Cole seu Bearer Token aqui
-const BEARER_TOKEN = 'COLE_SEU_TOKEN_AQUI';
+const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0eXBlIjoxLCJhdWQiOiJFQ09NTUVSQ0UiLCJyb2xlIjoiUk9MRV9BUElfTUVSQ0hBTlQiLCJwbm0iOiJMUEwgU0VSVklDT1MiLCJzaWQiOiIwOTQwMjEiLCJzdWIiOiJkOWRkYjdlYS1kZTFiLTQ0MTMtYjA3MS04MjlkMmRiMjBiYTQiLCJwc3QiOnRydWUsImlhdCI6MTc4MjI0MTAyOSwibmJmIjoxNzgyMTgzNjAwLCJleHAiOjE4MTQyMzc5OTl9.tHuCkWsFSpsvUoqcMLRc85e4IFnb4LvmOFGBpZAc-XE';
 
 exports.handler = async (event) => {
   const headers = {

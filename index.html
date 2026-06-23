@@ -358,15 +358,21 @@ async function criarLink(){
   const btn=document.getElementById('adm-btn');
   btn.disabled=true;btn.textContent='⏳ Criando...';
   document.getElementById('adm-result').style.display='none';
+  const desc=document.getElementById("adm-desc").value.trim();
+  const exp=document.getElementById("adm-exp").value;
   const body={
     name:nome,
-    description:document.getElementById('adm-desc').value.trim()||undefined,
-    type:'PAYMENT',value:Math.round(val*100),currency_code:'986',
-    supported_products:['CREDIT'],sales_limit:0,
-    installment:{installment_limit:parseInt(document.getElementById('adm-inst').value),interest_free:true,interest_rate:0},
-    customer_config_information:{required_email:true,required_full_name:false,required_national_document:true,required_full_address:false,required_phone_number:false},
+    type:"PAYMENT",
+    value:Math.round(val*100),
+    currency_code:"986",
+    supported_products:["CREDIT"],
+    sales_limit:0,
+    three_ds_enabled:false,
+    antifraud_enabled:{provider:"ACQUIRER"},
+    installment:{installment_limit:parseInt(document.getElementById("adm-inst").value),interest_free:true,interest_rate:0},
+    customer_config_information:{required_email:false,required_full_name:false,required_national_document:false,required_full_address:false,required_phone_number:false},
   };
-  const exp=document.getElementById('adm-exp').value;
+  if(desc)body.description=desc;
   if(exp)body.expires_at=exp;
   try{
     const r=await fetch(`${PROXY}?path=/payment-link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

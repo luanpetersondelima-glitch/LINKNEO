@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neo Pagamentos — Checkout</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--dark:#24303c;--green:#84b43c;--green-lt:#eaf3de;--green-md:#639922;--r-sm:6px;--r-md:10px;--r-lg:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2.5rem 1rem 3rem;color:#1a2530}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+.logo-mark{width:38px;height:38px;background:var(--dark);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:700;font-size:14px}
+.logo-name{font-size:16px;font-weight:600;color:var(--dark)}
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:0 2px 16px rgba(0,0,0,.08);width:100%;max-width:460px;overflow:hidden}
+.order-header{background:var(--dark);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+.oh-tag{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.oh-name{font-size:15px;font-weight:600;color:#fff}
+.oh-desc{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
+.oh-label{font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.5px;text-align:right;margin-bottom:2px}
+.oh-amount{font-size:24px;font-weight:700;color:var(--green)}
+.preview-wrap{padding:1.25rem 1.5rem .5rem}
+.preview{background:linear-gradient(135deg,#2c3e50,#34495e);border-radius:var(--r-md);padding:1.1rem 1.25rem;position:relative;min-height:90px}
+.chip{width:28px;height:20px;background:rgba(255,255,255,.2);border-radius:4px;margin-bottom:10px}
+.prev-num{font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.9);font-weight:500;font-family:'Courier New',monospace;margin-bottom:8px}
+.prev-meta{display:flex;gap:1.5rem}
+.prev-meta label{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:1px}
+.prev-meta span{font-size:12px;color:rgba(255,255,255,.85);font-weight:500}
+.prev-brand{position:absolute;right:1.1rem;top:1rem;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);background:rgba(255,255,255,.1);padding:3px 8px;border-radius:4px}
+.form-body{padding:.75rem 1.5rem 1.5rem}
+.sec-label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.6px;margin:.75rem 0 .5rem}
+.fg{margin-bottom:.8rem}
+.fg label{display:block;font-size:12px;color:#374151;margin-bottom:4px;font-weight:500}
+.fg input,.fg select{width:100%;height:42px;border:1.5px solid #e5e7eb;border-radius:var(--r-sm);padding:0 12px;font-size:14px;color:#111827;background:#fff;font-family:inherit;transition:border-color .15s,box-shadow .15s;appearance:none}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(132,180,60,.15)}
+.fg input::placeholder{color:#9ca3af}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
+.pay-btn{width:100%;height:50px;background:var(--dark);color:#fff;border:none;border-radius:var(--r-md);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;transition:background .15s}
+.pay-btn:hover:not(:disabled){background:#1a242d}
+.pay-btn:disabled{opacity:.7;cursor:not-allowed}
+.sec-note{text-align:center;margin-top:.75rem;font-size:11px;color:#9ca3af;display:flex;align-items:center;justify-content:center;gap:5px}
+.spin{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+.screen-load{padding:3rem 2rem;text-align:center}
+.big-spin{width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:var(--green);border-radius:50%;animation:rot .8s linear infinite;margin:0 auto 1rem}
+.screen-load p{font-size:13px;color:#6b7280}
+.screen-err{padding:2rem 1.5rem;text-align:center}
+.screen-err .icon{font-size:2rem;margin-bottom:.75rem}
+.screen-err h3{font-size:16px;color:#111827;margin-bottom:.5rem}
+.screen-err p{font-size:13px;color:#6b7280;line-height:1.6}
+.screen-ok{padding:2.5rem 1.5rem;text-align:center;display:none}
+.ok-icon{width:64px;height:64px;background:var(--green-lt);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:28px;color:var(--green-md)}
+.ok-title{font-size:20px;font-weight:700;color:var(--dark);margin-bottom:.5rem}
+.ok-sub{font-size:13px;color:#6b7280;line-height:1.7;margin-bottom:1.5rem}
+.receipt{background:#f9fafb;border-radius:var(--r-md);padding:1rem 1.25rem;text-align:left;border:1px solid #e5e7eb}
+.rrow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f3f4f6}
+.rrow:last-child{border-bottom:none}
+.rrow .rk{color:#6b7280}
+.rrow .rv{font-weight:600;color:#111827}
+.rrow .rv.ok{color:var(--green-md)}
+.adm-header{background:var(--dark);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+.adm-header span{color:#fff;font-size:14px;font-weight:600}
+.adm-badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.adm-body{padding:1.25rem 1.5rem 1.5rem}
+.pwd-wrap{padding:2rem 1.5rem;text-align:center}
+.pwd-wrap h3{font-size:16px;font-weight:600;color:var(--dark);margin-bottom:.5rem}
+.pwd-wrap p{font-size:13px;color:#6b7280;margin-bottom:1.25rem}
+.pwd-err{font-size:12px;color:#dc2626;margin-top:.5rem;display:none}
+.adm-result{margin-top:1rem;border-radius:8px;padding:1rem;font-size:13px;display:none}
+.adm-result.ok{background:#eaf3de;border:1px solid #9fca6b;color:#2d5a0e}
+.adm-result.err{background:#fef2f2;border:1px solid #fca5a5;color:#7f1d1d}
+.lg-box{margin-top:.75rem;background:#fff;border:1px solid #9fca6b;border-radius:8px;padding:1rem}
+.lg-lbl{font-size:11px;color:#3a7d0a;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.lg-val{font-family:'Courier New',monospace;font-size:12px;color:#111827;word-break:break-all;margin-bottom:8px}
+.cpbtn{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:none;border:1px solid #9fca6b;color:#3a7d0a;border-radius:5px;padding:3px 10px;cursor:pointer;font-family:inherit;margin-right:6px;margin-bottom:4px}
+.cpbtn:hover{background:#d4edba}
+.go-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:var(--dark);border:none;color:#fff;border-radius:5px;padding:4px 12px;cursor:pointer;font-family:inherit}
+@media(max-width:500px){
+  body{padding:1.25rem .75rem 2rem}
+  .order-header,.preview-wrap,.form-body,.adm-body{padding-left:1.25rem;padding-right:1.25rem}
+  .oh-amount{font-size:20px}
+  .row2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-mark">NP</div>
+  <span class="logo-name">Neo Pagamentos</span>
+</div>
+
+<!-- CHECKOUT -->
+<div class="card" id="card-checkout">
+  <div class="screen-load" id="scr-load">
+    <div class="big-spin"></div>
+    <p>Carregando dados do pagamento...</p>
+  </div>
+  <div class="screen-err" id="scr-err" style="display:none">
+    <div class="icon">⚠️</div>
+    <h3>Não foi possível carregar</h3>
+    <p id="err-msg">Verifique sua conexão ou tente novamente.</p>
+  </div>
+  <div id="scr-checkout" style="display:none">
+    <div class="order-header">
+      <div>
+        <div class="oh-tag">Link de pagamento</div>
+        <div class="oh-name" id="lk-name">—</div>
+        <div class="oh-desc" id="lk-desc"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="oh-label">Total</div>
+        <div class="oh-amount" id="lk-amount">—</div>
+      </div>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview">
+        <div class="chip"></div>
+        <div class="prev-num" id="pv-num">•••• •••• •••• ••••</div>
+        <div class="prev-meta">
+          <div><label>Titular</label><span id="pv-name">—</span></div>
+          <div><label>Validade</label><span id="pv-exp">—</span></div>
+        </div>
+        <div class="prev-brand" id="pv-brand">—</div>
+      </div>
+    </div>
+    <div class="form-body">
+      <div class="sec-label">Dados do cartão</div>
+      <div class="fg"><label>Número do cartão</label><input type="tel" id="f-num" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number"></div>
+      <div class="fg"><label>Nome do titular</label><input type="text" id="f-name" placeholder="Conforme no cartão" autocomplete="cc-name"></div>
+      <div class="row2">
+        <div class="fg"><label>Validade</label><input type="tel" id="f-exp" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp"></div>
+        <div class="fg"><label>CVV</label><input type="tel" id="f-cvv" placeholder="•••" maxlength="4" autocomplete="cc-csc"></div>
+      </div>
+      <div class="fg" id="fg-cpf"><label>CPF do titular</label><input type="tel" id="f-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+      <div class="fg" id="fg-email"><label>E-mail <span style="color:#9ca3af;font-weight:400">(recibo)</span></label><input type="email" id="f-email" placeholder="seu@email.com" autocomplete="email"></div>
+      <hr>
+      <div class="sec-label">Parcelamento</div>
+      <div class="fg"><label>Parcelas</label><select id="f-inst"></select></div>
+      <button class="pay-btn" id="pay-btn" onclick="submitPayment()">
+        🔒 Pagar <span id="btn-amt"></span>
+      </button>
+      <p class="sec-note">🛡 Pagamento seguro · PayStore · SSL 256-bit</p>
+    </div>
+  </div>
+  <div class="screen-ok" id="scr-ok">
+    <div class="ok-icon">✓</div>
+    <div class="ok-title">Pagamento aprovado!</div>
+    <p class="ok-sub">Transação processada com sucesso.<br>Comprovante enviado para o seu e-mail.</p>
+    <div class="receipt" id="receipt"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="card" id="card-admin" style="display:none">
+  <div class="adm-header">
+    <span>Criar link de pagamento</span>
+    <span class="adm-badge">Admin</span>
+  </div>
+  <div class="pwd-wrap" id="adm-pwd-wrap">
+    <h3>🔐 Área restrita</h3>
+    <p>Informe a senha para criar links de pagamento.</p>
+    <div class="fg" style="text-align:left"><label>Senha</label><input type="password" id="adm-pwd" placeholder="••••••••"></div>
+    <button class="pay-btn" style="margin-top:.75rem" onclick="checkPwd()">Entrar</button>
+    <p class="pwd-err" id="pwd-err">Senha incorreta.</p>
+  </div>
+  <div class="adm-body" id="adm-form" style="display:none">
+    <div class="sec-label">Dados do link</div>
+    <div class="fg"><label>Nome do link</label><input type="text" id="adm-name" placeholder="Ex: Consultoria Neo — Julho 2026"></div>
+    <div class="fg"><label>Descrição <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="adm-desc" placeholder="Detalhes do produto ou serviço"></div>
+    <div class="row2">
+      <div class="fg"><label>Valor (R$)</label><input type="text" id="adm-val" placeholder="0,00"></div>
+      <div class="fg"><label>Validade</label><input type="date" id="adm-exp"></div>
+    </div>
+    <div class="fg"><label>Máximo de parcelas</label>
+      <select id="adm-inst">
+        <option value="1">1x (à vista)</option>
+        <option value="2">2x</option>
+        <option value="3">3x</option>
+        <option value="6">6x</option>
+        <option value="12" selected>12x</option>
+      </select>
+    </div>
+    <button class="pay-btn" id="adm-btn" onclick="criarLink()">▶ Criar link de pagamento</button>
+    <div class="adm-result" id="adm-result">
+      <span id="adm-msg"></span>
+      <div class="lg-box" id="lg-box" style="display:none">
+        <div class="lg-lbl">link_id</div>
+        <div class="lg-val" id="lg-id"></div>
+        <button class="cpbtn" onclick="cp('lg-id')">Copiar ID</button>
+        <div class="lg-lbl" style="margin-top:.5rem">URL do checkout</div>
+        <div class="lg-val" id="lg-url"></div>
+        <button class="cpbtn" onclick="cp('lg-url')">Copiar URL</button>
+        <button class="go-btn" onclick="window.open(document.getElementById('lg-url').textContent)">Abrir →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Senha da área admin — altere se quiser
+const ADMIN_PASS = 'neo@2026';
+
+// Proxy local (Netlify Function) — não precisa de token aqui
+const PROXY = '/.netlify/functions/api';
+
+const QS      = new URLSearchParams(window.location.search);
+const LINK_ID = QS.get('id') || QS.get('link_id');
+const IS_ADMIN= QS.get('admin') === '1';
+let linkValue = 0;
+
+function fmt(c){return 'R$ '+(c/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function brand(n){
+  n=n.replace(/\D/g,'');
+  if(/^4/.test(n))return'Visa';
+  if(/^5[1-5]|^2[2-7]/.test(n))return'Master';
+  if(/^3[47]/.test(n))return'Amex';
+  if(/^6(011|5)/.test(n))return'Elo';
+  return'—';
+}
+
+document.getElementById('f-num').addEventListener('input',e=>{
+  let v=e.target.value.replace(/\D/g,'');
+  v=(v.match(/.{1,4}/g)||[]).join(' ');
+  e.target.value=v;
+  document.getElementById('pv-num').textContent=v||'•••• •••• •••• ••••';
+  document.getElementById('pv-brand').textContent=brand(v);
+});
+document.getElementById('f-name').addEventListener('input',e=>{
+  document.getElementById('pv-name').textContent=e.target.value.toUpperCase()||'—';
+});
+document.getElementById('f-exp').addEventListener('input',e=>{
+  let v=e.target.value.replace(/\D/g,'');
+  if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);
+  e.target.value=v;document.getElementById('pv-exp').textContent=v||'—';
+});
+document.getElementById('f-cvv').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'')});
+document.getElementById('f-cpf').addEventListener('input',e=>{
+  let v=e.target.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>9)v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+  else if(v.length>6)v=v.replace(/(\d{3})(\d{3})(\d+)/,'$1.$2.$3');
+  else if(v.length>3)v=v.replace(/(\d{3})(\d+)/,'$1.$2');
+  e.target.value=v;
+});
+
+if(IS_ADMIN){
+  document.getElementById('card-checkout').style.display='none';
+  document.getElementById('card-admin').style.display='';
+  const d=new Date();d.setDate(d.getDate()+7);
+  document.getElementById('adm-exp').value=d.toISOString().split('T')[0];
+}else{
+  loadLink();
+}
+
+async function loadLink(){
+  if(!LINK_ID){showErr('Nenhum link informado na URL. Use ?id=LINK_ID');return;}
+  try{
+    const r=await fetch(`${PROXY}?path=/payment-link&link_id=${LINK_ID}`);
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.message||'Erro '+r.status);
+    const c=Array.isArray(d.content)?d.content[0]:d.content;
+    if(!c)throw new Error('Link não encontrado');
+    renderCheckout(c);
+  }catch(e){showErr(e.message)}
+}
+
+function showErr(msg){
+  document.getElementById('scr-load').style.display='none';
+  document.getElementById('scr-err').style.display='';
+  document.getElementById('err-msg').textContent=msg;
+}
+
+function renderCheckout(d){
+  if(d.status&&d.status!=='ACTIVE'){
+    const m={EXPIRED:'Link expirado.',CANCELED:'Link cancelado.',SOLD_OFF:'Limite de pagamentos atingido.'};
+    showErr(m[d.status]||'Link indisponível.');return;
+  }
+  linkValue=d.value||0;
+  document.getElementById('lk-name').textContent=d.name||'Pagamento';
+  document.getElementById('lk-desc').textContent=d.description||'';
+  document.getElementById('lk-amount').textContent=fmt(linkValue);
+  document.getElementById('btn-amt').textContent=fmt(linkValue);
+  const sel=document.getElementById('f-inst');
+  const lim=d.installment?.installment_limit||1;
+  const free=d.installment?.interest_free!==false;
+  sel.innerHTML='';
+  for(let i=1;i<=lim;i++){
+    const o=document.createElement('option');
+    o.value=i;o.textContent=`${i}x de ${fmt(linkValue/i)}${free?' (sem juros)':''}`;
+    sel.appendChild(o);
+  }
+  const cfg=d.customer_config_information||{};
+  if(!cfg.required_national_document)document.getElementById('fg-cpf').style.display='none';
+  if(!cfg.required_email)document.getElementById('fg-email').style.display='none';
+  document.getElementById('scr-load').style.display='none';
+  document.getElementById('scr-checkout').style.display='';
+}
+
+async function submitPayment(){
+  const num=document.getElementById('f-num').value.replace(/\s/g,'');
+  const name=document.getElementById('f-name').value.trim();
+  const exp=document.getElementById('f-exp').value;
+  const cvv=document.getElementById('f-cvv').value;
+  const btn=document.getElementById('pay-btn');
+  if(num.length<15||!name||exp.length<5||cvv.length<3){
+    btn.textContent='⚠️ Preencha todos os campos';btn.style.background='#dc2626';
+    setTimeout(()=>{btn.innerHTML='🔒 Pagar '+document.getElementById('btn-amt').textContent;btn.style.background=''},2500);
+    return;
+  }
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Processando...';
+  try{
+    const [mm,yy]=exp.split('/');
+    const body={
+      payment:{value:linkValue,currency_code:'986',merchant_payment_id:'NEO-'+Date.now(),payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
+      card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,card_holder_national_document:document.getElementById('f-cpf').value.replace(/\D/g,'')||undefined},
+      customer:{business_customer:false,email:document.getElementById('f-email').value.trim()||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined},
+      customer_device:{ip:'0.0.0.0',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false},
+    };
+    const r=await fetch(`${PROXY}?path=/payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.message||data.error||'Erro '+r.status);
+    const st=(data.payment_authorization?.status||data.status||'').toUpperCase();
+    if(['APPROVED','CAPTURED','AUTHORIZED'].includes(st))showOk(data);
+    else throw new Error('Não aprovado: '+st);
+  }catch(e){
+    btn.disabled=false;btn.style.background='#dc2626';
+    btn.textContent='❌ '+e.message.slice(0,45);
+    setTimeout(()=>{btn.innerHTML='🔒 Tentar novamente';btn.style.background=''},3500);
+  }
+}
+
+function showOk(data){
+  const num=document.getElementById('f-num').value;
+  const inst=document.getElementById('f-inst').selectedOptions[0]?.textContent||'—';
+  const pid=data.payment_authorization?.merchant_payment_id||data.payment_id||'—';
+  document.getElementById('receipt').innerHTML=`
+    <div class="rrow"><span class="rk">Status</span><span class="rv ok">✓ Aprovado</span></div>
+    <div class="rrow"><span class="rk">Valor</span><span class="rv">${fmt(linkValue)}</span></div>
+    <div class="rrow"><span class="rk">Parcelamento</span><span class="rv">${inst}</span></div>
+    <div class="rrow"><span class="rk">Cartão</span><span class="rv">•••• ${num.replace(/\s/g,'').slice(-4)} · ${brand(num)}</span></div>
+    <div class="rrow"><span class="rk">ID</span><span class="rv" style="font-size:11px">${pid}</span></div>`;
+  document.getElementById('scr-checkout').style.display='none';
+  document.getElementById('scr-ok').style.display='';
+}
+
+function checkPwd(){
+  if(document.getElementById('adm-pwd').value===ADMIN_PASS){
+    document.getElementById('adm-pwd-wrap').style.display='none';
+    document.getElementById('adm-form').style.display='';
+  }else{document.getElementById('pwd-err').style.display='';}
+}
+document.getElementById('adm-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')checkPwd()});
+
+async function criarLink(){
+  const nome=document.getElementById('adm-name').value.trim();
+  const val=parseFloat(document.getElementById('adm-val').value.replace(',','.'));
+  if(!nome||isNaN(val)||val<=0){showAdmErr('❌ Preencha nome e valor.');return;}
+  const btn=document.getElementById('adm-btn');
+  btn.disabled=true;btn.textContent='⏳ Criando...';
+  document.getElementById('adm-result').style.display='none';
+  const body={
+    name:nome,
+    description:document.getElementById('adm-desc').value.trim()||undefined,
+    type:'PAYMENT',value:Math.round(val*100),currency_code:'986',
+    supported_products:['CREDIT'],sales_limit:0,
+    installment:{installment_limit:parseInt(document.getElementById('adm-inst').value),interest_free:true,interest_rate:0},
+    customer_config_information:{required_email:true,required_full_name:false,required_national_document:true,required_full_address:false,required_phone_number:false},
+  };
+  const exp=document.getElementById('adm-exp').value;
+  if(exp)body.expires_at=exp;
+  try{
+    const r=await fetch(`${PROXY}?path=/payment-link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.message||d.error||'Erro '+r.status);
+    const id=d.link_id||d.id;
+    if(!id)throw new Error('ID não retornado: '+JSON.stringify(d));
+    const url=window.location.origin+window.location.pathname+'?id='+id;
+    document.getElementById('lg-id').textContent=id;
+    document.getElementById('lg-url').textContent=url;
+    document.getElementById('lg-box').style.display='';
+    showAdmOk('✅ Link criado com sucesso!');
+  }catch(e){showAdmErr('❌ '+e.message);}
+  finally{btn.disabled=false;btn.textContent='▶ Criar link de pagamento';}
+}
+
+function showAdmOk(m){const b=document.getElementById('adm-result');b.className='adm-result ok';b.style.display='';document.getElementById('adm-msg').textContent=m;}
+function showAdmErr(m){const b=document.getElementById('adm-result');b.className='adm-result err';b.style.display='';document.getElementById('adm-msg').textContent=m;document.getElementById('lg-box').style.display='none';}
+function cp(id){navigator.clipboard.writeText(document.getElementById(id).textContent);}
+</script>
+</body>
+</html>

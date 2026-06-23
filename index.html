@@ -369,7 +369,7 @@ async function criarLink(){
     sales_limit:0,
     three_ds_enabled:false,
     antifraud_enabled:{provider:"ACQUIRER"},
-    installment:{installment_limit:parseInt(document.getElementById("adm-inst").value),interest_free:true,interest_rate:0},
+    installment:{installment_limit:parseInt(document.getElementById("adm-inst").value),interest_free:true,interest_rate:0.01},
     customer_config_information:{required_email:false,required_full_name:false,required_national_document:false,required_full_address:false,required_phone_number:false},
   };
   if(desc)body.description=desc;

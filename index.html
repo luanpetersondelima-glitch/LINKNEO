@@ -310,12 +310,20 @@ async function submitPayment(){
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Processando...';
   try{
     const [mm,yy]=exp.split('/');
+    const ts=new Date();
+    const pad=n=>('0'+n).slice(-2);
+    const orderDate=ts.getFullYear()+'-'+pad(ts.getMonth()+1)+'-'+pad(ts.getDate())+'T'+pad(ts.getHours())+':'+pad(ts.getMinutes())+':'+pad(ts.getSeconds())+'.000Z';
+    const mid='NEO-'+Date.now();
+    const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
+    const email=document.getElementById('f-email').value.trim();
     const body={
-      payment:{value:linkValue,currency_code:'986',merchant_payment_id:'NEO-'+Date.now(),payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
-      order:{order_id:'ORD-'+Date.now(),order_number:'ORD-'+Date.now(),order_date:(()=>{const d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+'T00:00:00Z'})(),currency_code:'986',amount:linkValue},
-      card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,card_holder_national_document:document.getElementById('f-cpf').value.replace(/\D/g,'')||undefined},
-      customer:{business_customer:false,email:document.getElementById('f-email').value.trim()||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined},
-      customer_device:{ip:'0.0.0.0',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false},
+      payment:{value:linkValue,currency_code:'986',merchant_payment_id:mid,payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
+      order:{order_number:mid,order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
+      card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,...(cpf?{card_holder_national_document:cpf}:{})},
+      customer:{business_customer:false,national_document:cpf||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined,...(email?{email}:{})},
+      customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
+      three_ds_info_request:{enabled:false},
+      type:'DIRECT',
     };
     const r=await fetch(`${PROXY}?path=/payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await r.json();

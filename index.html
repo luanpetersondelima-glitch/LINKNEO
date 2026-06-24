@@ -382,10 +382,16 @@ async function criarLink(){
     const url=window.location.origin+window.location.pathname+'?id='+id;
     document.getElementById('lg-id').textContent=id;
     document.getElementById('lg-url').textContent=url;
-    document.getElementById('lg-box').style.display='';
-    showAdmOk('✅ Link criado com sucesso!');
-  }catch(e){showAdmErr('❌ '+e.message);}
-  finally{btn.disabled=false;btn.textContent='▶ Criar link de pagamento';}
+    document.getElementById('lg-box').style.display='block';
+    document.getElementById('adm-result').className='adm-result ok';
+    document.getElementById('adm-result').style.display='block';
+    document.getElementById('adm-msg').textContent='✅ Link criado com sucesso!';
+  }catch(e){
+    document.getElementById('adm-result').className='adm-result err';
+    document.getElementById('adm-result').style.display='block';
+    document.getElementById('adm-msg').textContent='❌ '+e.message;
+    document.getElementById('lg-box').style.display='none';
+  }finally{btn.disabled=false;btn.textContent='▶ Criar link de pagamento';}
 }
 
 function showAdmOk(m){const b=document.getElementById('adm-result');b.className='adm-result ok';b.style.display='';document.getElementById('adm-msg').textContent=m;}

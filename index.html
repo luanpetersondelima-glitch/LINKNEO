@@ -291,7 +291,7 @@ function renderCheckout(d){
   }
   const cfg=d.customer_config_information||{};
   // CPF sempre visível
-  if(!cfg.required_email)document.getElementById('fg-email').style.display='none';
+  // email sempre visível
   document.getElementById('scr-load').style.display='none';
   document.getElementById('scr-checkout').style.display='';
 }
@@ -302,7 +302,8 @@ async function submitPayment(){
   const exp=document.getElementById('f-exp').value;
   const cvv=document.getElementById('f-cvv').value;
   const btn=document.getElementById('pay-btn');
-  if(num.length<15||!name||exp.length<5||cvv.length<3){
+  const emailVal=document.getElementById('f-email').value.trim();
+  if(num.length<15||!name||exp.length<5||cvv.length<3||!emailVal){
     btn.textContent='⚠️ Preencha todos os campos';btn.style.background='#dc2626';
     setTimeout(()=>{btn.innerHTML='🔒 Pagar '+document.getElementById('btn-amt').textContent;btn.style.background=''},2500);
     return;
@@ -320,7 +321,7 @@ async function submitPayment(){
       payment:{value:linkValue,currency_code:'986',merchant_payment_id:mid,payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
       order:{order_number:mid,order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
       card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,...(cpf?{card_holder_national_document:cpf}:{})},
-      customer:{business_customer:false,national_document:cpf||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined,...(email?{email}:{})},
+      customer:{business_customer:false,national_document:cpf||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined,email:email||undefined},
       customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_accept_header:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
       three_ds_info_request:{enabled:false},
       type:'DIRECT',

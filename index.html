@@ -312,6 +312,7 @@ async function submitPayment(){
     const [mm,yy]=exp.split('/');
     const body={
       payment:{value:linkValue,currency_code:'986',merchant_payment_id:'NEO-'+Date.now(),payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
+      order:{order_id:'ORD-'+Date.now(),currency_code:'986',amount:linkValue},
       card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,card_holder_national_document:document.getElementById('f-cpf').value.replace(/\D/g,'')||undefined},
       customer:{business_customer:false,email:document.getElementById('f-email').value.trim()||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined},
       customer_device:{ip:'0.0.0.0',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false},

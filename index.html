@@ -290,7 +290,7 @@ function renderCheckout(d){
     sel.appendChild(o);
   }
   const cfg=d.customer_config_information||{};
-  if(!cfg.required_national_document)document.getElementById('fg-cpf').style.display='none';
+  // CPF sempre visível
   if(!cfg.required_email)document.getElementById('fg-email').style.display='none';
   document.getElementById('scr-load').style.display='none';
   document.getElementById('scr-checkout').style.display='';
@@ -370,7 +370,7 @@ async function criarLink(){
     three_ds_enabled:false,
     antifraud_enabled:{provider:"ACQUIRER"},
     installment:{installment_limit:parseInt(document.getElementById("adm-inst").value),interest_free:true,interest_rate:0.01},
-    customer_config_information:{required_email:false,required_full_name:false,required_national_document:false,required_full_address:false,required_phone_number:false},
+    customer_config_information:{required_email:false,required_full_name:false,required_national_document:true,required_full_address:false,required_phone_number:false},
   };
   if(desc)body.description=desc;
   if(exp)body.expires_at=exp;

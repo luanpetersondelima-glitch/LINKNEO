@@ -419,12 +419,11 @@ function cp(id){
   setTimeout(()=>btn.textContent=orig, 2000);
 }
 function shareWhatsApp(){
-  const url = document.getElementById('lg-url').textContent;
-  const name = document.getElementById('adm-name').value.trim() || 'Pagamento';
-  const val = document.getElementById('adm-val').value;
-  const msg = encodeURIComponent('Olá! Segue o link para pagamento de *'+name+'* (R$ '+val+'):
-'+url);
-  window.open('https://wa.me/?text='+msg,'_blank');
+  var url = document.getElementById('lg-url').textContent;
+  var nome = document.getElementById('adm-name').value.trim() || 'Pagamento';
+  var val = document.getElementById('adm-val').value;
+  var msg = encodeURIComponent('Ola! Segue o link para pagamento de ' + nome + ' (R$ ' + val + '): ' + url);
+  window.open('https://wa.me/?text=' + msg, '_blank');
 }
 </script>
 </body>

@@ -90,7 +90,7 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
   <span class="logo-name">Neo Pagamentos</span>
 </div>
 
-<!-- CHECKOUT -->
+<!-- CHECKOUT v20260624133340 -->
 <div class="card" id="card-checkout">
   <div class="screen-load" id="scr-load">
     <div class="big-spin"></div>
@@ -321,7 +321,7 @@ async function submitPayment(){
       order:{order_number:mid,order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
       card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,...(cpf?{card_holder_national_document:cpf}:{})},
       customer:{business_customer:false,national_document:cpf||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined,...(email?{email}:{})},
-      customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
+      customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_accept_header:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
       three_ds_info_request:{enabled:false},
       type:'DIRECT',
     };

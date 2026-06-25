@@ -589,15 +589,20 @@
     updateSummary();
   }
 
-  // ── Calcular due_date em horário de Brasília (UTC-3) ──
+  // ── Calcular due_date — Phoebus exige offset explícito -03:00 ──
   function calcDueDate() {
     const chip = document.querySelector('.exp-chip.on');
     const days = parseInt(chip?.dataset.days ?? 1);
     const d = new Date();
     d.setDate(d.getDate() + days);
-    // Ajusta para UTC-3 (Brasília) e formata como yyyy-MM-ddTHH:mm:ss.000Z
-    const brt = new Date(d.getTime() - (3 * 60 * 60 * 1000));
-    return brt.toISOString().replace(/\.\d{3}Z$/, '.000Z');
+    const pad = n => String(n).padStart(2, '0');
+    // Usa horário local do browser (deve estar em BRT) com offset fixo -03:00
+    return d.getFullYear() + '-' +
+           pad(d.getMonth()+1) + '-' +
+           pad(d.getDate()) + 'T' +
+           pad(d.getHours()) + ':' +
+           pad(d.getMinutes()) + ':' +
+           pad(d.getSeconds()) + '-03:00';
   }
 
   // ── Atualizar resumo ──
@@ -645,22 +650,24 @@
     // Número de pedido único — usado internamente para rastreio, não enviado à Phoebus no payment-link
     // const orderNumber = 'NEO-' + Date.now();
 
+    // payment_methods como array de objetos — formato aceito pela Phoebus ADIQ
+    const methodObjs = methods.map(m => ({ type: m }));
+
     const payload = {
       payment_link_name : name,
-      value             : centavos,
-      currency_code     : '986',           // BRL
-      due_date          : dueDate,         // yyyy-MM-ddTHH:mm:ss.000Z (Brasília)
-      payment_methods   : methods,         // ["CREDIT"]
+      value             : centavos,         // inteiro em centavos
+      currency_code     : 986,              // inteiro, não string
+      due_date          : dueDate,          // yyyy-MM-ddTHH:mm:ss-03:00
+      payment_methods   : methodObjs,       // [{type:"CREDIT"}]
       max_installments  : parcOn ? parc : 1,
-      interest_rate     : 0.0,             // float obrigatório
+      // interest_rate omitido quando zero — Phoebus rejeita 0.0 em alguns contextos
       three_ds_enabled  : false,
       antifraud_enabled : false,
     };
 
     if (desc)  payload.description        = desc;
     if (qty)   payload.quantity_uses      = parseInt(qty);
-    // e-mail sempre lowercase — Phoebus rejeita maiúsculas
-    if (email) payload.notification_email = email.toLowerCase();
+    if (email) payload.notification_email = email.toLowerCase().trim();
 
     return payload;
   }

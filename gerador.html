@@ -652,7 +652,7 @@
       installment: {
         installment_limit : parcOn ? parc : 1,
         interest_free     : true,
-        interest_rate     : 0,
+        interest_rate     : 0.01,
       },
       customer_config_information: {
         required_email            : true,
@@ -663,7 +663,8 @@
       },
     };
 
-    if (desc)  payload.description        = desc;
+    // description é obrigatório pela Phoebus
+    payload.description = desc || name;
     if (email) payload.notification_email = email.toLowerCase().trim();
 
     return payload;

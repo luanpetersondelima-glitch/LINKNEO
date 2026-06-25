@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Neo Pagamentos — Checkout</title>
 <style>
@@ -85,6 +84,19 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
   .row2{grid-template-columns:1fr}
 }
 </style>
+
+<!-- ADIQ Antifraude Fingerprint (produção org_id=k8vif92e) -->
+<script>
+  window._adiqFpId = 'adiq_br' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  var _fp = document.createElement('script');
+  _fp.type = 'text/javascript';
+  _fp.src = 'https://h.online-metrix.net/fp/tags.js?org_id=k8vif92e&session_id=' + window._adiqFpId;
+  document.head.appendChild(_fp);
+</script>
+<noscript><iframe style="width:100px;height:100px;border:0;position:absolute;top:-5000px;" src="https://h.online-metrix.net/fp/tags.js?org_id=k8vif92e&session_id=adiq_br"></iframe></noscript>
 </head>
 <body>
 
@@ -94,14 +106,14 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
 
 <!-- CHECKOUT v20260624133340 -->
 <div class="card" id="card-checkout">
-  <div class="screen-load" id="scr-load">
+  <div class="screen-load" id="scr-load" style="display: none;">
     <div class="big-spin"></div>
     <p>Carregando dados do pagamento...</p>
   </div>
-  <div class="screen-err" id="scr-err" style="display:none">
+  <div class="screen-err" id="scr-err" style="">
     <div class="icon">⚠️</div>
     <h3>Não foi possível carregar</h3>
-    <p id="err-msg">Verifique sua conexão ou tente novamente.</p>
+    <p id="err-msg">Nenhum link informado na URL. Use ?id=LINK_ID</p>
   </div>
   <div id="scr-checkout" style="display:none">
     <div class="order-header">
@@ -180,7 +192,7 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
         <option value="2">2x</option>
         <option value="3">3x</option>
         <option value="6">6x</option>
-        <option value="12" selected>12x</option>
+        <option value="12" selected="">12x</option>
       </select>
     </div>
     <button class="pay-btn" id="adm-btn" onclick="criarLink()">▶ Criar link de pagamento</button>
@@ -189,13 +201,13 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
       <div class="lg-box" id="lg-box" style="display:none">
         <div class="lg-lbl">link_id</div>
         <div class="lg-val" id="lg-id"></div>
-        <button class="cpbtn" onclick="cp('lg-id')">Copiar ID</button>
+        <button class="cpbtn" onclick="cp(&#39;lg-id&#39;)">Copiar ID</button>
         <div class="lg-lbl" style="margin-top:.75rem">URL do checkout</div>
         <div class="lg-val" id="lg-url"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <button class="share-btn share-copy" onclick="cp('lg-url')">📋 Copiar link</button>
+          <button class="share-btn share-copy" onclick="cp(&#39;lg-url&#39;)">📋 Copiar link</button>
           <button class="share-btn share-wa" onclick="shareWhatsApp()">💬 WhatsApp</button>
-          <button class="share-btn share-open" onclick="window.open(document.getElementById('lg-url').textContent)">🔗 Abrir</button>
+          <button class="share-btn share-open" onclick="window.open(document.getElementById(&#39;lg-url&#39;).textContent)">🔗 Abrir</button>
         </div>
       </div>
     </div>
@@ -319,17 +331,25 @@ async function submitPayment(){
     const ts=new Date();
     const pad=n=>('0'+n).slice(-2);
     const orderDate=ts.getFullYear()+'-'+pad(ts.getMonth()+1)+'-'+pad(ts.getDate())+'T'+pad(ts.getHours())+':'+pad(ts.getMinutes())+':'+pad(ts.getSeconds())+'.000Z';
-    const mid='NEO-'+Date.now();
+    // order_number max 13 chars
+    const mid='NEO'+Date.now().toString().slice(-10);
     const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
     const email=document.getElementById('f-email').value.trim();
+    const nameParts=name.split(' ');
+    const firstName=nameParts[0];
+    const lastName=nameParts.slice(1).join(' ')||firstName;
+    // fingerprint ADIQ gerado no carregamento
+    const fpId=window._adiqFpId||('adiq_br'+Date.now());
+    // endereço padrão (obrigatório pelo antifraude ACQUIRER)
+    const addr={street:'Nao informado',street_number:'0',neighbourhood:'Nao informado',city:'Sao Paulo',state:'SP',zip_code:'01310100'};
     const body={
-      payment:{value:linkValue,currency_code:'986',merchant_payment_id:mid,payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
-      order:{order_number:mid,order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
-      card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,...(cpf?{card_holder_national_document:cpf}:{})},
-      customer:{business_customer:false,national_document:cpf||undefined,first_name:name.split(' ')[0],last_name:name.split(' ').slice(1).join(' ')||undefined,email:email||undefined},
-      customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_accept_header:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
-      three_ds_info_request:{enabled:false},
       type:'DIRECT',
+      payment:{value:linkValue,currency_code:'986',merchant_payment_id:mid,payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
+      order:{order_number:mid.substring(0,13),order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
+      card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,card_holder_national_document:cpf,billing_address:addr},
+      customer:{business_customer:false,national_document:cpf,first_name:firstName,last_name:lastName,email:email,phone_number1:'11999999999',address:addr},
+      customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
+      antifraud_request:{provider:'ACQUIRER',fingerprint_id:fpId},
     };
     const r=await fetch(`${PROXY}?path=/payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await r.json();
@@ -426,5 +446,6 @@ function shareWhatsApp(){
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 </script>
-</body>
-</html>
+
+
+</body></html>

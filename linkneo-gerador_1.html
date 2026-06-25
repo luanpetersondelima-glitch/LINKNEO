@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neo Payment Intelligence — Gerador de Link</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --neo-dark:    #1a1a2e;
+      --neo-green:   #8DC63F;
+      --neo-green-d: #6aab2e;
+      --neo-green-l: #f0f7e6;
+      --white:       #ffffff;
+      --bg:          #eeeef5;
+      --card-bg:     #ffffff;
+      --header-bg:   #f7f7fc;
+      --field-bg:    #f4f4fa;
+      --border:      #dcdce8;
+      --text-main:   #1a1a2e;
+      --text-sub:    #666677;
+      --text-muted:  #aaaabb;
+      --font-main:   'Inter', sans-serif;
+      --font-mono:   'JetBrains Mono', monospace;
+      --radius:      14px;
+      --radius-sm:   8px;
+      --red:         #e03535;
+    }
+    body {
+      font-family: var(--font-main);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2rem 1rem 3rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .bg-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: linear-gradient(var(--border) 0.5px, transparent 0.5px),
+                        linear-gradient(90deg, var(--border) 0.5px, transparent 0.5px);
+      background-size: 44px 44px; opacity: 0.6;
+    }
+    .bg-nodes { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .node {
+      position: absolute; border-radius: 50%; background: var(--neo-green);
+      animation: nodePulse 3s ease-in-out infinite;
+    }
+    .node::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%;
+      border: 1px solid var(--neo-green); opacity: 0.3;
+      animation: ringPulse 3s ease-in-out infinite;
+    }
+    .node-1{width:6px;height:6px;top:12%;left:8%;animation-delay:0s}
+    .node-2{width:5px;height:5px;top:40%;left:4%;animation-delay:.9s}
+    .node-3{width:7px;height:7px;top:75%;left:14%;animation-delay:1.6s}
+    .node-4{width:5px;height:5px;top:18%;right:7%;animation-delay:.4s}
+    .node-5{width:6px;height:6px;top:50%;right:5%;animation-delay:1.1s}
+    .node-6{width:4px;height:4px;top:82%;right:16%;animation-delay:2s}
+    .line-svg { position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0; }
+    @keyframes nodePulse { 0%,100%{opacity:.25;transform:scale(1)} 50%{opacity:.7;transform:scale(1.3)} }
+    @keyframes ringPulse  { 0%,100%{transform:scale(1);opacity:.3} 50%{transform:scale(2.2);opacity:0} }
+
+    .page-wrap { position:relative;z-index:10;width:100%;max-width:860px;display:flex;flex-direction:column;gap:1.25rem; }
+
+    /* Topbar */
+    .topbar {
+      display:flex;align-items:center;justify-content:space-between;
+      background:var(--card-bg);border:3px solid var(--neo-green);
+      border-radius:var(--radius);padding:1rem 1.5rem;
+      box-shadow:0 4px 24px rgba(141,198,63,.08);
+    }
+    .topbar-right { display:flex;align-items:center;gap:10px; }
+    .badge-env {
+      display:flex;align-items:center;gap:5px;background:var(--neo-dark);
+      border-radius:20px;padding:5px 11px;font-size:11px;color:var(--neo-green);font-weight:500;
+    }
+    .powered-dot { width:6px;height:6px;background:var(--neo-green);border-radius:50%;animation:nodePulse 2s ease-in-out infinite;display:inline-block; }
+    .topbar-user { font-size:12px;color:var(--text-muted); }
+
+    /* Grid 2 colunas */
+    .two-col { display:grid;grid-template-columns:1fr 1fr;gap:1.25rem; }
+
+    /* Cards */
+    .card { background:var(--card-bg);border:3px solid var(--neo-green);border-radius:var(--radius);overflow:hidden;box-shadow:0 4px 24px rgba(141,198,63,.08); }
+    .card-full { grid-column:1/-1; }
+    .card-head {
+      background:var(--header-bg);padding:1rem 1.5rem;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:10px;
+    }
+    .card-head-icon { width:30px;height:30px;background:var(--neo-dark);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .card-head-icon svg { color:var(--neo-green); }
+    .card-head-title { font-size:13px;font-weight:600;color:var(--text-main);letter-spacing:.3px; }
+    .card-head-sub   { font-size:11px;color:var(--text-muted);margin-top:1px; }
+    .card-body-p { padding:1.25rem 1.5rem; }
+
+    /* Campos */
+    .field-group   { margin-bottom:14px; }
+    .field-row-2   { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px; }
+    label.lbl {
+      display:block;font-size:11px;color:var(--text-muted);letter-spacing:.5px;
+      text-transform:uppercase;margin-bottom:5px;
+    }
+    .field {
+      display:flex;align-items:center;background:var(--field-bg);
+      border:1px solid var(--border);border-radius:var(--radius-sm);
+      padding:9px 12px;gap:8px;transition:border-color .2s,box-shadow .2s;
+    }
+    .field:focus-within { border-color:var(--neo-green);box-shadow:0 0 0 3px rgba(141,198,63,.1); }
+    .field input,.field select,.field textarea {
+      flex:1;background:transparent;border:none;outline:none;
+      font-size:13px;font-family:var(--font-main);color:var(--text-main);resize:none;
+    }
+    .field input::placeholder,.field textarea::placeholder { color:var(--text-muted); }
+    .field select { color:var(--text-main);cursor:pointer; }
+    .field-prefix { font-size:12px;color:var(--text-muted);flex-shrink:0; }
+    .field.error { border-color:var(--red); }
+
+    /* Toggle */
+    .toggle-row { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+    .toggle-label { font-size:13px;color:var(--text-sub); }
+    .toggle { position:relative;width:40px;height:22px; }
+    .toggle input { opacity:0;width:0;height:0; }
+    .toggle-slider { position:absolute;inset:0;background:var(--border);border-radius:22px;cursor:pointer;transition:background .2s; }
+    .toggle-slider::before { content:'';position:absolute;width:16px;height:16px;background:white;border-radius:50%;top:3px;left:3px;transition:transform .2s; }
+    .toggle input:checked + .toggle-slider { background:var(--neo-green); }
+    .toggle input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+    /* Métodos */
+    .methods-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:8px; }
+    .method-chip {
+      display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;
+      border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--field-bg);
+      cursor:pointer;transition:border-color .2s,background .2s;user-select:none;
+    }
+    .method-chip.on { border-color:var(--neo-green);background:var(--neo-green-l); }
+    .method-chip span { font-size:11px;color:var(--text-muted);font-weight:500; }
+    .method-chip.on span { color:var(--neo-green-d); }
+    .method-chip.on svg { color:var(--neo-green-d) !important; }
+
+    /* Exp chips */
+    .exp-chips { display:flex;gap:8px;flex-wrap:wrap; }
+    .exp-chip {
+      padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--field-bg);
+      font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;
+    }
+    .exp-chip.on { border-color:var(--neo-green);background:var(--neo-green-l);color:var(--neo-green-d);font-weight:500; }
+
+    /* Link gerado */
+    .link-preview {
+      background:var(--neo-dark);border-radius:var(--radius-sm);padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;
+    }
+    .link-url { font-family:var(--font-mono);font-size:12px;color:var(--neo-green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1; }
+    .link-copy-btn {
+      background:transparent;border:1px solid var(--neo-green);border-radius:6px;padding:5px 10px;
+      color:var(--neo-green);font-size:11px;font-family:var(--font-main);cursor:pointer;
+      display:flex;align-items:center;gap:5px;transition:background .15s;flex-shrink:0;
+    }
+    .link-copy-btn:hover { background:rgba(141,198,63,.1); }
+
+    /* QR */
+    .qr-wrap { display:flex;justify-content:center;margin-bottom:14px; }
+    .qr-box { width:100px;height:100px;background:var(--field-bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center; }
+
+    /* Share */
+    .share-row { display:flex;gap:8px; }
+    .share-btn {
+      flex:1;padding:9px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);
+      background:var(--field-bg);font-size:12px;color:var(--text-sub);font-family:var(--font-main);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .2s,color .2s;
+    }
+    .share-btn:hover { border-color:var(--neo-green);color:var(--neo-green-d); }
+
+    /* Resumo */
+    .summary-list { display:flex;flex-direction:column;gap:8px;margin-bottom:16px; }
+    .summary-row { display:flex;align-items:center;justify-content:space-between;font-size:12px; }
+    .summary-row .s-key { color:var(--text-muted); }
+    .summary-row .s-val { color:var(--text-main);font-weight:500;font-family:var(--font-mono); }
+    .summary-divider { border:none;border-top:1px solid var(--border);margin:4px 0; }
+
+    /* Botão gerar */
+    .btn-generate {
+      width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--neo-dark);
+      border:1.5px solid var(--neo-green);color:var(--neo-green);font-size:14px;font-weight:500;
+      font-family:var(--font-main);cursor:pointer;display:flex;align-items:center;justify-content:center;
+      gap:8px;letter-spacing:.3px;transition:box-shadow .2s,background .2s;
+    }
+    .btn-generate:hover { background:#111128;box-shadow:0 0 20px rgba(141,198,63,.18); }
+    .btn-generate:active { transform:scale(.99); }
+    .btn-generate:disabled { opacity:.5;cursor:not-allowed;transform:none; }
+
+    /* Spinner */
+    .spinner {
+      width:16px;height:16px;border:2px solid rgba(141,198,63,.3);
+      border-top-color:var(--neo-green);border-radius:50%;
+      animation:spin .7s linear infinite;display:inline-block;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* Info API */
+    .api-info {
+      background:var(--neo-dark);border-radius:var(--radius-sm);padding:10px 14px;
+      font-size:11px;color:var(--text-muted);font-family:var(--font-mono);
+      line-height:1.6;margin-bottom:14px;
+    }
+    .api-info span { color:var(--neo-green); }
+
+    /* Link ID resultado */
+    .result-id {
+      background:var(--neo-green-l);border:1px solid var(--neo-green);
+      border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;
+      font-size:12px;color:var(--neo-green-d);display:flex;align-items:center;gap:8px;
+    }
+
+    /* Erro API */
+    .api-error {
+      background:#fff0f0;border:1px solid var(--red);border-radius:var(--radius-sm);
+      padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--red);
+      display:none;
+    }
+
+    /* Histórico */
+    .history-table { width:100%;border-collapse:collapse;font-size:12px; }
+    .history-table th {
+      text-align:left;padding:8px 12px;font-size:10px;letter-spacing:.6px;
+      text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500;
+    }
+    .history-table td { padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-sub);vertical-align:middle; }
+    .history-table tr:last-child td { border-bottom:none; }
+    .history-table td:first-child { color:var(--text-main);font-weight:500; }
+    .status-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:500; }
+    .status-badge.ativo    { background:var(--neo-green-l);color:var(--neo-green-d); }
+    .status-badge.pago     { background:#e8f4ff;color:#2255aa; }
+    .status-badge.expirado { background:#f5f5fa;color:var(--text-muted); }
+    .td-mono { font-family:var(--font-mono);font-size:11px;color:var(--text-muted); }
+    .td-action { background:transparent;border:none;cursor:pointer;color:var(--text-muted);transition:color .15s;padding:4px; }
+    .td-action:hover { color:var(--neo-green-d); }
+
+    /* Toast */
+    .toast {
+      position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+      background:var(--neo-dark);border:1px solid var(--neo-green);color:var(--neo-green);
+      font-size:13px;padding:10px 20px;border-radius:8px;
+      display:flex;align-items:center;gap:8px;z-index:100;transition:transform .3s ease;pointer-events:none;
+    }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+    .toast.toast-error { border-color:var(--red);color:var(--red); }
+
+    @media(max-width:680px){
+      .two-col{grid-template-columns:1fr}
+      .card-full{grid-column:1}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-nodes">
+  <div class="node node-1"></div><div class="node node-2"></div><div class="node node-3"></div>
+  <div class="node node-4"></div><div class="node node-5"></div><div class="node node-6"></div>
+</div>
+<svg class="line-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <line x1="115" y1="108" x2="58"   y2="360"  stroke="#8DC63F" stroke-width=".6" opacity=".12"/>
+  <line x1="58"  y1="360" x2="202"  y2="675"  stroke="#8DC63F" stroke-width=".6" opacity=".12"/>
+  <line x1="1325" y1="162" x2="1382" y2="450" stroke="#8DC63F" stroke-width=".6" opacity=".12"/>
+  <line x1="1382" y1="450" x2="1210" y2="738" stroke="#8DC63F" stroke-width=".6" opacity=".12"/>
+  <line x1="115"  y1="108" x2="1325" y2="162" stroke="#8DC63F" stroke-width=".4" opacity=".05"/>
+</svg>
+
+<div class="page-wrap">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <svg width="124" height="30" viewBox="0 0 124 30" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="2" width="26" height="26" rx="5" fill="#1a1a2e"/>
+      <rect x="3.5" y="5.5" width="8" height="8" rx="1.5" fill="#8DC63F"/>
+      <rect x="14"  y="5.5" width="8" height="8" rx="1.5" fill="#8DC63F" opacity=".45"/>
+      <rect x="3.5" y="16"  width="8" height="8" rx="1.5" fill="#8DC63F" opacity=".45"/>
+      <rect x="14"  y="16"  width="8" height="8" rx="1.5" fill="#8DC63F"/>
+      <text x="33" y="19" font-family="Inter,sans-serif" font-size="17" font-weight="600" fill="#1a1a2e" letter-spacing=".5">NEO</text>
+      <text x="33" y="27" font-family="Inter,sans-serif" font-size="6.5" fill="#888899" letter-spacing="1.8">PAYMENT INTELLIGENCE</text>
+    </svg>
+    <div class="topbar-right">
+      <div class="badge-env"><span class="powered-dot"></span> Gerador de Link</div>
+      <span class="topbar-user">Merchant 094021</span>
+    </div>
+  </div>
+
+  <!-- Linha 1 -->
+  <div class="two-col">
+
+    <!-- Dados do link -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div>
+          <div class="card-head-title">Dados do link</div>
+          <div class="card-head-sub">Phoebus · POST /ecommerce/v1/payment-link</div>
+        </div>
+      </div>
+      <div class="card-body-p">
+
+        <div class="field-group">
+          <label class="lbl">Nome do produto / serviço</label>
+          <div class="field" id="f-nome">
+            <input type="text" id="prod-name" placeholder="Ex: Plano Mensal Pro" oninput="updateSummary()"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="lbl">Descrição (exibida no checkout)</label>
+          <div class="field">
+            <textarea id="prod-desc" rows="2" placeholder="Breve descrição do produto..." oninput="updateSummary()"></textarea>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div>
+            <label class="lbl">Valor (R$)</label>
+            <div class="field" id="f-valor">
+              <span class="field-prefix">R$</span>
+              <input type="text" id="prod-valor" placeholder="0,00" oninput="fmtValor(this)"/>
+            </div>
+          </div>
+          <div>
+            <label class="lbl">Quantidade de usos</label>
+            <div class="field">
+              <input type="number" id="prod-qty" placeholder="Ilimitado" min="1" oninput="updateSummary()"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Permitir parcelamento</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-parc" checked onchange="toggleParc()"/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div id="parc-row" class="field-group">
+          <label class="lbl">Máx. de parcelas</label>
+          <div class="field">
+            <select id="prod-parc" onchange="updateSummary()">
+              <option value="1">1x — à vista</option>
+              <option value="2">2x sem juros</option>
+              <option value="3">3x sem juros</option>
+              <option value="6">6x sem juros</option>
+              <option value="12" selected>12x sem juros</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Mapeamento para API -->
+        <div class="api-info">
+          <span>payment_link_name</span> · <span>value</span> (centavos) · <span>max_installments</span> · <span>due_date</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Métodos e validade -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="card-head-title">Métodos aceitos</div>
+          <div class="card-head-sub">Formas de pagamento habilitadas</div>
+        </div>
+      </div>
+      <div class="card-body-p">
+
+        <div class="methods-grid" id="methods-grid">
+          <div class="method-chip on" data-method="CREDIT" onclick="toggleMethod(this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6aab2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Crédito</span>
+          </div>
+          <div class="method-chip" data-method="DEBIT" onclick="toggleMethod(this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaaabb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Débito</span>
+          </div>
+          <div class="method-chip on" data-method="PIX" onclick="toggleMethod(this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6aab2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span>Pix</span>
+          </div>
+        </div>
+
+        <hr class="summary-divider" style="margin:16px 0"/>
+
+        <label class="lbl">Validade do link</label>
+        <div class="exp-chips" id="exp-chips">
+          <div class="exp-chip" data-days="0" onclick="selectExp(this)">Hoje</div>
+          <div class="exp-chip on" data-days="1" onclick="selectExp(this)">1 dia</div>
+          <div class="exp-chip" data-days="7" onclick="selectExp(this)">7 dias</div>
+          <div class="exp-chip" data-days="30" onclick="selectExp(this)">30 dias</div>
+          <div class="exp-chip" data-days="365" onclick="selectExp(this)">1 ano</div>
+        </div>
+
+        <hr class="summary-divider" style="margin:16px 0"/>
+
+        <div class="field-group" style="margin-bottom:0">
+          <label class="lbl">E-mail do lojista (notificações)</label>
+          <div class="field">
+            <input type="email" id="prod-email" placeholder="email@empresa.com.br" oninput="updateSummary()"/>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha 2 -->
+  <div class="two-col">
+
+    <!-- Resumo -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <div>
+          <div class="card-head-title">Resumo</div>
+          <div class="card-head-sub">Payload enviado à Phoebus</div>
+        </div>
+      </div>
+      <div class="card-body-p">
+        <div class="summary-list">
+          <div class="summary-row"><span class="s-key">payment_link_name</span><span class="s-val" id="s-prod">—</span></div>
+          <div class="summary-row"><span class="s-key">value (centavos)</span><span class="s-val" id="s-valor">—</span></div>
+          <div class="summary-row"><span class="s-key">max_installments</span><span class="s-val" id="s-parc">12</span></div>
+          <hr class="summary-divider"/>
+          <div class="summary-row"><span class="s-key">payment_methods</span><span class="s-val" id="s-methods">CREDIT, PIX</span></div>
+          <div class="summary-row"><span class="s-key">due_date</span><span class="s-val" id="s-exp">—</span></div>
+          <div class="summary-row"><span class="s-key">quantity_uses</span><span class="s-val" id="s-qty">ilimitado</span></div>
+          <div class="summary-row"><span class="s-key">merchant_id</span><span class="s-val">094021</span></div>
+        </div>
+
+        <div id="api-error" class="api-error"></div>
+
+        <button class="btn-generate" id="btn-gerar" onclick="generateLink()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          <span id="btn-label">Gerar link via Phoebus</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Link gerado -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div>
+          <div class="card-head-title">Link gerado</div>
+          <div class="card-head-sub">link_id retornado pela Phoebus</div>
+        </div>
+      </div>
+      <div class="card-body-p">
+
+        <div id="result-id-box" class="result-id" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>link_id: <strong id="result-link-id">—</strong></span>
+        </div>
+
+        <div class="link-preview">
+          <span class="link-url" id="link-url">Aguardando geração...</span>
+          <button class="link-copy-btn" onclick="copyLink()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar
+          </button>
+        </div>
+
+        <div class="qr-wrap">
+          <div class="qr-box">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" opacity=".2">
+              <rect x="2"  y="2"  width="16" height="16" rx="2" stroke="#1a1a2e" stroke-width="2"/>
+              <rect x="6"  y="6"  width="8"  height="8"  fill="#1a1a2e"/>
+              <rect x="30" y="2"  width="16" height="16" rx="2" stroke="#1a1a2e" stroke-width="2"/>
+              <rect x="34" y="6"  width="8"  height="8"  fill="#1a1a2e"/>
+              <rect x="2"  y="30" width="16" height="16" rx="2" stroke="#1a1a2e" stroke-width="2"/>
+              <rect x="6"  y="34" width="8"  height="8"  fill="#1a1a2e"/>
+              <rect x="30" y="30" width="7"  height="7"  fill="#1a1a2e"/>
+              <rect x="41" y="30" width="7"  height="7"  fill="#1a1a2e"/>
+              <rect x="30" y="41" width="7"  height="7"  fill="#1a1a2e"/>
+              <rect x="41" y="41" width="7"  height="7"  fill="#1a1a2e"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="share-row">
+          <button class="share-btn" onclick="shareWhats()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            WhatsApp
+          </button>
+          <button class="share-btn" onclick="shareEmail()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            E-mail
+          </button>
+          <button class="share-btn" onclick="copyLink()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico -->
+  <div class="card card-full">
+    <div class="card-head">
+      <div class="card-head-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div class="card-head-title">Histórico de links</div>
+        <div class="card-head-sub">Links gerados nesta sessão</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Produto</th><th>Valor</th><th>link_id (Phoebus)</th>
+            <th>URL checkout</th><th>Validade</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">Nenhum link gerado ainda nesta sessão.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Link copiado!</span>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  //  CONFIGURAÇÃO — mesma Netlify Function do LINKNEO
+  // ─────────────────────────────────────────────
+  const API_PROXY = '/.netlify/functions/api'; // proxy já existente no repositório
+
+  let generatedLink   = '';
+  let generatedLinkId = '';
+
+  // ── Formatação de valor ──
+  function fmtValor(el) {
+    let v = el.value.replace(/\D/g, '');
+    if (!v) { el.value = ''; updateSummary(); return; }
+    el.value = (parseInt(v) / 100).toFixed(2).replace('.', ',');
+    updateSummary();
+  }
+
+  // ── Toggle parcelamento ──
+  function toggleParc() {
+    const on = document.getElementById('toggle-parc').checked;
+    document.getElementById('parc-row').style.display = on ? '' : 'none';
+    updateSummary();
+  }
+
+  // ── Toggle método ──
+  function toggleMethod(el) {
+    el.classList.toggle('on');
+    const icon = el.querySelector('svg');
+    icon.style.stroke = el.classList.contains('on') ? '#6aab2e' : '#aaaabb';
+    updateSummary();
+  }
+
+  // ── Selecionar expiração ──
+  function selectExp(el) {
+    document.querySelectorAll('.exp-chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    updateSummary();
+  }
+
+  // ── Calcular due_date ──
+  function calcDueDate() {
+    const chip = document.querySelector('.exp-chip.on');
+    const days = parseInt(chip?.dataset.days ?? 1);
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    // Formato aceito pela Phoebus: yyyy-MM-ddTHH:mm:ss.000Z
+    return d.toISOString().replace(/\.\d{3}Z$/, '.000Z');
+  }
+
+  // ── Atualizar resumo ──
+  function updateSummary() {
+    const prod  = document.getElementById('prod-name').value  || '—';
+    const valor = document.getElementById('prod-valor').value || '—';
+    const parcOn = document.getElementById('toggle-parc').checked;
+    const parc   = parcOn ? document.getElementById('prod-parc').value : '1';
+    const qty    = document.getElementById('prod-qty').value || 'ilimitado';
+    const exp    = calcDueDate().split('T')[0];
+
+    const methods = [...document.querySelectorAll('.method-chip.on')]
+      .map(m => m.dataset.method).join(', ') || '—';
+
+    // Valor em centavos
+    const centavos = valor !== '—'
+      ? parseInt(valor.replace(',', '').replace('.', ''))
+      : '—';
+
+    document.getElementById('s-prod').textContent   = prod;
+    document.getElementById('s-valor').textContent  = centavos !== '—' ? centavos + ' (' + 'R$ ' + valor + ')' : '—';
+    document.getElementById('s-parc').textContent   = parc;
+    document.getElementById('s-methods').textContent = methods;
+    document.getElementById('s-exp').textContent    = exp;
+    document.getElementById('s-qty').textContent    = qty;
+  }
+
+  // ── Montar payload para POST /payment-link ──
+  function buildPayload() {
+    const name    = document.getElementById('prod-name').value.trim();
+    const desc    = document.getElementById('prod-desc').value.trim();
+    const valor   = document.getElementById('prod-valor').value;
+    const parcOn  = document.getElementById('toggle-parc').checked;
+    const parc    = parseInt(document.getElementById('prod-parc').value);
+    const qty     = document.getElementById('prod-qty').value;
+    const email   = document.getElementById('prod-email').value.trim();
+    const dueDate = calcDueDate();
+
+    const methods = [...document.querySelectorAll('.method-chip.on')]
+      .map(m => m.dataset.method);
+
+    // Converte R$ valor para centavos
+    const centavos = parseInt(valor.replace(/\D/g, ''));
+
+    const payload = {
+      payment_link_name: name,
+      value: centavos,
+      due_date: dueDate,
+      payment_methods: methods,
+      max_installments: parcOn ? parc : 1,
+      interest_rate: 0,          // sem juros — ajuste se necessário
+      currency_code: '986',      // BRL
+    };
+
+    if (desc)  payload.description    = desc;
+    if (qty)   payload.quantity_uses  = parseInt(qty);
+    if (email) payload.notification_email = email;
+
+    return payload;
+  }
+
+  // ── Validação antes de enviar ──
+  function validate() {
+    let ok = true;
+
+    const nome = document.getElementById('prod-name').value.trim();
+    document.getElementById('f-nome').classList.toggle('error', !nome);
+    if (!nome) ok = false;
+
+    const valor = document.getElementById('prod-valor').value;
+    const centavos = parseInt(valor.replace(/\D/g, '') || '0');
+    document.getElementById('f-valor').classList.toggle('error', centavos < 100);
+    if (centavos < 100) ok = false; // mínimo R$ 1,00
+
+    const methods = document.querySelectorAll('.method-chip.on');
+    if (!methods.length) ok = false;
+
+    return ok;
+  }
+
+  // ── Gerar link via API Phoebus ──
+  async function generateLink() {
+    hideError();
+    if (!validate()) {
+      showToast('Preencha os campos obrigatórios.', true);
+      return;
+    }
+
+    const btn   = document.getElementById('btn-gerar');
+    const label = document.getElementById('btn-label');
+    btn.disabled = true;
+    label.innerHTML = '<span class="spinner"></span> Chamando Phoebus...';
+
+    const payload = buildPayload();
+
+    try {
+      const resp = await fetch(API_PROXY + '?path=/payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok || data.status >= 400) {
+        // Exibe erro detalhado retornado pela Phoebus
+        const msg = data.message || data.error || 'Erro ao gerar link.';
+        const code = data.code ? ` [código ${data.code}]` : '';
+        showError(`Phoebus: ${msg}${code} (HTTP ${resp.status})`);
+        showToast('Erro da API Phoebus', true);
+        return;
+      }
+
+      // Sucesso — link_id retornado pela Phoebus
+      const linkId = data.link_id || data.id || data.payment_link_id;
+      generatedLinkId = linkId;
+      generatedLink   = `https://linkpay-neo.netlify.app/?id=${linkId}`;
+
+      // Exibe resultado
+      document.getElementById('result-link-id').textContent = linkId;
+      document.getElementById('result-id-box').style.display = 'flex';
+      document.getElementById('link-url').textContent = generatedLink;
+
+      // Adiciona ao histórico
+      addHistory(payload, linkId);
+      showToast('Link gerado com sucesso!');
+
+    } catch (err) {
+      showError(`Erro de conexão: ${err.message}. Verifique se o deploy Netlify está ativo.`);
+      showToast('Erro de conexão', true);
+    } finally {
+      btn.disabled = false;
+      label.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        Gerar link via Phoebus`;
+    }
+  }
+
+  // ── Histórico ──
+  function addHistory(payload, linkId) {
+    const tbody = document.getElementById('history-tbody');
+    // Remove placeholder se existir
+    if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+
+    const valor = (payload.value / 100).toFixed(2).replace('.', ',');
+    const exp   = payload.due_date.split('T')[0];
+    const methods = (payload.payment_methods || []).join(', ');
+    const url   = `https://linkpay-neo.netlify.app/?id=${linkId}`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${payload.payment_link_name}</td>
+      <td>R$ ${valor}</td>
+      <td class="td-mono">${linkId}</td>
+      <td class="td-mono" style="font-size:10px">${url}</td>
+      <td>${exp}</td>
+      <td><span class="status-badge ativo">● Ativo</span></td>
+      <td>
+        <button class="td-action" title="Copiar URL" onclick="navigator.clipboard?.writeText('${url}');showToast('Copiado!')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      </td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+  }
+
+  // ── Copiar ──
+  function copyLink() {
+    if (!generatedLink) { showToast('Gere um link primeiro.', true); return; }
+    navigator.clipboard?.writeText(generatedLink).catch(() => {});
+    showToast('Link copiado!');
+  }
+
+  // ── Compartilhar ──
+  function shareWhats() {
+    if (!generatedLink) { showToast('Gere um link primeiro.', true); return; }
+    const prod = document.getElementById('prod-name').value || 'Pagamento';
+    window.open('https://wa.me/?text=' + encodeURIComponent('Olá! Segue o link de pagamento para ' + prod + ': ' + generatedLink), '_blank');
+  }
+  function shareEmail() {
+    if (!generatedLink) { showToast('Gere um link primeiro.', true); return; }
+    const prod = document.getElementById('prod-name').value || 'Pagamento';
+    window.location.href = `mailto:?subject=Link de pagamento - ${prod}&body=Acesse: ${generatedLink}`;
+  }
+
+  // ── Erro API ──
+  function showError(msg) {
+    const el = document.getElementById('api-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('api-error').style.display = 'none';
+  }
+
+  // ── Toast ──
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.toggle('toast-error', !!isError);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Inicializar
+  ['prod-name','prod-valor','prod-ref','prod-parc','prod-qty','prod-email'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateSummary);
+    document.getElementById(id)?.addEventListener('change', updateSummary);
+  });
+  updateSummary();
+</script>
+</body>
+</html>

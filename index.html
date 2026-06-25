@@ -407,6 +407,12 @@ async function submitPayment(){
     if(['APPROVED','CAPTURED','AUTHORIZED'].includes(st))showOk(data);
     else throw new Error('Não aprovado: '+st);
   }catch(e){
+    btn.disabled=false;
+    btn.style.background='#dc2626';
+    btn.textContent='❌ '+e.message.slice(0,45);
+    setTimeout(()=>{btn.innerHTML='🔒 Pagar '+document.getElementById('btn-amt').textContent;btn.style.background=''},3500);
+  }
+}
 
 function showOk(data){
   const num=document.getElementById('f-num').value;

@@ -147,7 +147,35 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
         <div class="fg"><label>CVV</label><input type="tel" id="f-cvv" placeholder="•••" maxlength="4" autocomplete="cc-csc"></div>
       </div>
       <div class="fg" id="fg-cpf"><label>CPF do titular</label><input type="tel" id="f-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+      <div class="fg" id="fg-fullname" style="display:none"><label>Nome completo</label><input type="text" id="f-fullname" placeholder="Nome completo do comprador" autocomplete="name"></div>
+      <div class="fg" id="fg-phone" style="display:none"><label>Telefone</label><input type="tel" id="f-phone" placeholder="(11) 99999-9999" maxlength="15"></div>
       <div class="fg" id="fg-email"><label>E-mail <span style="color:#9ca3af;font-weight:400">(recibo)</span></label><input type="email" id="f-email" placeholder="seu@email.com" autocomplete="email"></div>
+      <div id="fg-address-block" style="display:none">
+        <div class="sec-label">Endereço de cobrança</div>
+        <div class="row2">
+          <div class="fg"><label>CEP</label><input type="tel" id="f-cep" placeholder="00000-000" maxlength="9"></div>
+          <div class="fg"><label>Número</label><input type="text" id="f-num-end" placeholder="Ex: 100"></div>
+        </div>
+        <div class="fg"><label>Rua</label><input type="text" id="f-street" placeholder="Nome da rua"></div>
+        <div class="row2">
+          <div class="fg"><label>Bairro</label><input type="text" id="f-bairro" placeholder="Bairro"></div>
+          <div class="fg"><label>Cidade</label><input type="text" id="f-city" placeholder="Cidade"></div>
+        </div>
+        <div class="fg"><label>Estado (UF)</label>
+          <select id="f-uf">
+            <option value="">Selecione</option>
+            <option value="AC">AC</option><option value="AL">AL</option><option value="AM">AM</option>
+            <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option>
+            <option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option>
+            <option value="MG">MG</option><option value="MS">MS</option><option value="MT">MT</option>
+            <option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+            <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option>
+            <option value="RN">RN</option><option value="RO">RO</option><option value="RR">RR</option>
+            <option value="RS">RS</option><option value="SC">SC</option><option value="SE">SE</option>
+            <option value="SP" selected>SP</option><option value="TO">TO</option>
+          </select>
+        </div>
+      </div>
       <hr>
       <div class="sec-label">Parcelamento</div>
       <div class="fg"><label>Parcelas</label><select id="f-inst"></select></div>
@@ -259,6 +287,18 @@ document.getElementById('f-cpf').addEventListener('input',e=>{
   else if(v.length>3)v=v.replace(/(\d{3})(\d+)/,'$1.$2');
   e.target.value=v;
 });
+document.getElementById('f-cep').addEventListener('input',e=>{
+  let v=e.target.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>5)v=v.replace(/(\d{5})(\d+)/,'$1-$2');
+  e.target.value=v;
+});
+document.getElementById('f-phone').addEventListener('input',e=>{
+  let v=e.target.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>10)v=v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+  else if(v.length>6)v=v.replace(/(\d{2})(\d{4})(\d+)/,'($1) $2-$3');
+  else if(v.length>2)v=v.replace(/(\d{2})(\d+)/,'($1) $2');
+  e.target.value=v;
+});
 
 if(IS_ADMIN){
   document.getElementById('card-checkout').style.display='none';
@@ -307,8 +347,12 @@ function renderCheckout(d){
     sel.appendChild(o);
   }
   const cfg=d.customer_config_information||{};
-  // CPF sempre visível
-  // email sempre visível
+  // Exibir/esconder campos conforme customer_config_information do link
+  document.getElementById('fg-cpf').style.display         = cfg.required_national_document!==false ? '' : 'none';
+  document.getElementById('fg-email').style.display       = cfg.required_email!==false ? '' : 'none';
+  document.getElementById('fg-fullname').style.display    = cfg.required_full_name ? '' : 'none';
+  document.getElementById('fg-phone').style.display       = cfg.required_phone_number ? '' : 'none';
+  document.getElementById('fg-address-block').style.display = cfg.required_full_address ? '' : 'none';
   document.getElementById('scr-load').style.display='none';
   document.getElementById('scr-checkout').style.display='';
 }
@@ -333,21 +377,38 @@ async function submitPayment(){
     const orderDate=ts.getFullYear()+'-'+pad(ts.getMonth()+1)+'-'+pad(ts.getDate())+'T'+pad(ts.getHours())+':'+pad(ts.getMinutes())+':'+pad(ts.getSeconds())+'.000Z';
     // order_number max 13 chars
     const mid='NEO'+Date.now().toString().slice(-10);
-    const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
-    const email=document.getElementById('f-email').value.trim();
-    const nameParts=name.split(' ');
-    const firstName=nameParts[0];
-    const lastName=nameParts.slice(1).join(' ')||firstName;
-    // fingerprint ADIQ gerado no carregamento
-    const fpId=window._adiqFpId||('adiq_br'+Date.now());
-    // endereço padrão (obrigatório pelo antifraude ACQUIRER)
-    const addr={street:'Nao informado',street_number:'0',neighbourhood:'Nao informado',city:'Sao Paulo',state:'SP',zip_code:'01310100'};
+    const cpf      = document.getElementById('f-cpf').value.replace(/\D/g,'');
+    const email    = document.getElementById('f-email').value.trim();
+    const fullname = document.getElementById('f-fullname').value.trim();
+    const phone    = document.getElementById('f-phone').value.replace(/\D/g,'');
+    const cep      = document.getElementById('f-cep').value.replace(/\D/g,'');
+    const street   = document.getElementById('f-street').value.trim();
+    const numEnd   = document.getElementById('f-num-end').value.trim();
+    const bairro   = document.getElementById('f-bairro').value.trim();
+    const city     = document.getElementById('f-city').value.trim();
+    const uf       = document.getElementById('f-uf').value;
+    // Nome: usa fullname se preenchido, senão usa nome do titular
+    const displayName = fullname || name;
+    const nameParts = displayName.split(' ');
+    const firstName = nameParts[0];
+    const lastName  = nameParts.slice(1).join(' ') || firstName;
+    // fingerprint ADIQ
+    const fpId = window._adiqFpId || ('adiq_br'+Date.now());
+    // endereço
+    const addr = {
+      street:        street || 'Nao informado',
+      street_number: numEnd || '0',
+      neighbourhood: bairro || 'Nao informado',
+      city:          city   || 'Sao Paulo',
+      state:         uf     || 'SP',
+      zip_code:      cep    || '01310100',
+    };
     const body={
       type:'DIRECT',
       payment:{value:linkValue,currency_code:'986',merchant_payment_id:mid,payment_method:'CARD',product:'CREDIT',installments:parseInt(document.getElementById('f-inst').value),installment_type:'INTEREST_FREE',auto_capture:true},
       order:{order_number:mid.substring(0,13),order_date:orderDate,items:[{sku:'001',name:'Pagamento Neo',unit_price:linkValue,quantity:1,category:'Servicos'}]},
       card_info:{number:num,holder_name:name,due_date:`20${yy}-${mm}-01`,cvv,generate_token:false,card_holder_national_document:cpf,billing_address:addr},
-      customer:{business_customer:false,national_document:cpf,first_name:firstName,last_name:lastName,email:email,phone_number1:'11999999999',address:addr},
+      customer:{business_customer:false,national_document:cpf,first_name:firstName,last_name:lastName,email:email,phone_number1:phone||'11999999999',address:addr},
       customer_device:{ip:'191.0.0.1',browser_user_agent:navigator.userAgent,browser_accept:'*/*',browser_language:navigator.language,screen_height:String(screen.height),screen_width:String(screen.width),time_zone_offset:String(new Date().getTimezoneOffset()),color_depth:String(screen.colorDepth),java_enable:false,java_script_enabled:true},
       antifraud_request:{provider:'ACQUIRER',fingerprint_id:fpId},
     };
@@ -358,11 +419,6 @@ async function submitPayment(){
     if(['APPROVED','CAPTURED','AUTHORIZED'].includes(st))showOk(data);
     else throw new Error('Não aprovado: '+st);
   }catch(e){
-    btn.disabled=false;btn.style.background='#dc2626';
-    btn.textContent='❌ '+e.message.slice(0,45);
-    setTimeout(()=>{btn.innerHTML='🔒 Tentar novamente';btn.style.background=''},3500);
-  }
-}
 
 function showOk(data){
   const num=document.getElementById('f-num').value;

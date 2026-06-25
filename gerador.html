@@ -589,13 +589,14 @@
     updateSummary();
   }
 
-  // ── Calcular expires_at — formato validado pela Phoebus: yyyy-MM-ddTHH:mm:ss.000Z ──
+  // ── expires_at: formato yyyy-MM-dd confirmado no Postman ──
   function calcDueDate() {
     const chip = document.querySelector('.exp-chip.on');
     const days = parseInt(chip?.dataset.days ?? 1);
     const d = new Date();
     d.setDate(d.getDate() + days);
-    return d.toISOString().replace(/\.\d{3}Z$/, '.000Z');
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
   }
 
   // ── Atualizar resumo ──
@@ -623,7 +624,7 @@
     document.getElementById('s-qty').textContent    = qty;
   }
 
-  // ── Montar payload para POST /payment-link (ADIQ) — estrutura validada ──
+  // ── buildPayload — payload EXATO do Postman que retornou link_id ──
   function buildPayload() {
     const name   = document.getElementById('prod-name').value.trim();
     const desc   = document.getElementById('prod-desc').value.trim();
@@ -633,43 +634,37 @@
     const qty    = document.getElementById('prod-qty').value;
     const email  = document.getElementById('prod-email').value.trim();
 
-    // Produtos selecionados (CREDIT, DEBIT, PIX)
     const products = [...document.querySelectorAll('.method-chip.on')]
       .map(m => m.dataset.method);
 
-    // Valor em centavos (inteiro)
     const centavos = parseInt(valor.replace(/\D/g, ''));
+    const expiresAt = calcDueDate(); // formato "yyyy-MM-dd"
 
-    // expires_at: formato yyyy-MM-ddTHH:mm:ss.000Z aceito pela Phoebus
-    const expires = calcDueDate();
-
-    // Payload exato validado pela Phoebus ADIQ (campos confirmados no projeto anterior)
+    // Estrutura IDÊNTICA ao payload do Postman que retornou link_id com sucesso
     const payload = {
-      name             : name,
-      type             : 'PAYMENT',
-      value            : centavos,
-      currency_code    : '986',
+      name              : name,
+      type              : 'PAYMENT',
+      value             : centavos,
+      expires_at        : expiresAt,
+      sales_limit       : qty ? parseInt(qty) : 0,
+      currency_code     : '986',
       supported_products: products,
-      sales_limit      : qty ? parseInt(qty) : 0,
-      three_ds_enabled : false,
-      antifraud_enabled: { provider: 'ACQUIRER' },
       installment: {
         installment_limit : parcOn ? parc : 1,
         interest_free     : true,
         interest_rate     : 0,
       },
       customer_config_information: {
-        required_email            : false,
+        required_email            : true,
         required_full_name        : false,
-        required_national_document: false,
+        required_national_document: true,
         required_full_address     : false,
         required_phone_number     : false,
       },
     };
 
-    if (desc)    payload.description = desc;
-    if (expires) payload.expires_at  = expires;
-    if (email)   payload.notification_email = email.toLowerCase().trim();
+    if (desc)  payload.description        = desc;
+    if (email) payload.notification_email = email.toLowerCase().trim();
 
     return payload;
   }

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -364,7 +363,7 @@
 
         <!-- Mapeamento para API -->
         <div class="api-info">
-          <span>payment_link_name</span> · <span>value</span> (centavos) · <span>max_installments</span> · <span>due_date</span>
+          <span>name</span> · <span>value</span> (centavos) · <span>installment_limit</span> · <span>expires_at</span>
         </div>
 
       </div>
@@ -438,12 +437,12 @@
       </div>
       <div class="card-body-p">
         <div class="summary-list">
-          <div class="summary-row"><span class="s-key">payment_link_name</span><span class="s-val" id="s-prod">—</span></div>
+          <div class="summary-row"><span class="s-key">name</span><span class="s-val" id="s-prod">—</span></div>
           <div class="summary-row"><span class="s-key">value (centavos)</span><span class="s-val" id="s-valor">—</span></div>
           <div class="summary-row"><span class="s-key">max_installments</span><span class="s-val" id="s-parc">12</span></div>
           <hr class="summary-divider"/>
-          <div class="summary-row"><span class="s-key">payment_methods</span><span class="s-val" id="s-methods">CREDIT, PIX</span></div>
-          <div class="summary-row"><span class="s-key">due_date</span><span class="s-val" id="s-exp">—</span></div>
+          <div class="summary-row"><span class="s-key">supported_products</span><span class="s-val" id="s-methods">CREDIT, PIX</span></div>
+          <div class="summary-row"><span class="s-key">expires_at</span><span class="s-val" id="s-exp">—</span></div>
           <div class="summary-row"><span class="s-key">quantity_uses</span><span class="s-val" id="s-qty">ilimitado</span></div>
           <div class="summary-row"><span class="s-key">merchant_id</span><span class="s-val">094021</span></div>
         </div>
@@ -607,7 +606,7 @@
     const parcOn = document.getElementById('toggle-parc').checked;
     const parc   = parcOn ? document.getElementById('prod-parc').value : '1';
     const qty    = document.getElementById('prod-qty').value || 'ilimitado';
-    const exp    = calcDueDate().split('T')[0];
+    const exp    = calcDueDate();
 
     const methods = [...document.querySelectorAll('.method-chip.on')]
       .map(m => m.dataset.method).join(', ') || '—';
@@ -726,20 +725,27 @@
 
       // Sucesso — link_id retornado pela Phoebus
       const linkId = data.link_id || data.id || data.payment_link_id;
+      if (!linkId) {
+        showError('Phoebus retornou sucesso mas sem link_id: ' + JSON.stringify(data));
+        return;
+      }
+
       generatedLinkId = linkId;
-      generatedLink   = `https://linkpay-neo.netlify.app/?id=${linkId}`;
+      generatedLink   = 'https://linkpay-neo.netlify.app/?id=' + linkId;
 
       // Exibe resultado
       document.getElementById('result-link-id').textContent = linkId;
       document.getElementById('result-id-box').style.display = 'flex';
       document.getElementById('link-url').textContent = generatedLink;
 
-      // Adiciona ao histórico
-      addHistory(payload, linkId);
+      // Histórico em try separado — erro aqui não cancela o sucesso
+      try { addHistory(payload, linkId); } catch(e) { console.warn('addHistory erro:', e.message); }
+
       showToast('Link gerado com sucesso!');
 
     } catch (err) {
-      showError(`Erro de conexão: ${err.message}. Verifique se o deploy Netlify está ativo.`);
+      // Só cai aqui se o fetch falhar de verdade
+      showError('Erro ao chamar Phoebus: ' + err.message);
       showToast('Erro de conexão', true);
     } finally {
       btn.disabled = false;
@@ -755,14 +761,14 @@
     // Remove placeholder se existir
     if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
 
-    const valor = (payload.value / 100).toFixed(2).replace('.', ',');
-    const exp   = payload.due_date.split('T')[0];
-    const methods = (payload.payment_methods || []).join(', ');
-    const url   = `https://linkpay-neo.netlify.app/?id=${linkId}`;
+    const valor   = (payload.value / 100).toFixed(2).replace('.', ',');
+    const exp     = payload.expires_at || '—';
+    const methods = (payload.supported_products || []).join(', ');
+    const url     = `https://linkpay-neo.netlify.app/?id=${linkId}`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${payload.payment_link_name}</td>
+      <td>${payload.name}</td>
       <td>R$ ${valor}</td>
       <td class="td-mono">${linkId}</td>
       <td class="td-mono" style="font-size:10px">${url}</td>

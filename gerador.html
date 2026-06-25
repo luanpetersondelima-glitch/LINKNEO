@@ -589,20 +589,13 @@
     updateSummary();
   }
 
-  // ── Calcular due_date — Phoebus exige offset explícito -03:00 ──
+  // ── Calcular expires_at — formato validado pela Phoebus: yyyy-MM-ddTHH:mm:ss.000Z ──
   function calcDueDate() {
     const chip = document.querySelector('.exp-chip.on');
     const days = parseInt(chip?.dataset.days ?? 1);
     const d = new Date();
     d.setDate(d.getDate() + days);
-    const pad = n => String(n).padStart(2, '0');
-    // Usa horário local do browser (deve estar em BRT) com offset fixo -03:00
-    return d.getFullYear() + '-' +
-           pad(d.getMonth()+1) + '-' +
-           pad(d.getDate()) + 'T' +
-           pad(d.getHours()) + ':' +
-           pad(d.getMinutes()) + ':' +
-           pad(d.getSeconds()) + '-03:00';
+    return d.toISOString().replace(/\.\d{3}Z$/, '.000Z');
   }
 
   // ── Atualizar resumo ──
@@ -630,44 +623,53 @@
     document.getElementById('s-qty').textContent    = qty;
   }
 
-  // ── Montar payload para POST /payment-link (ADIQ) ──
+  // ── Montar payload para POST /payment-link (ADIQ) — estrutura validada ──
   function buildPayload() {
-    const name    = document.getElementById('prod-name').value.trim();
-    const desc    = document.getElementById('prod-desc').value.trim();
-    const valor   = document.getElementById('prod-valor').value;
-    const parcOn  = document.getElementById('toggle-parc').checked;
-    const parc    = parseInt(document.getElementById('prod-parc').value);
-    const qty     = document.getElementById('prod-qty').value;
-    const email   = document.getElementById('prod-email').value.trim();
-    const dueDate = calcDueDate();
+    const name   = document.getElementById('prod-name').value.trim();
+    const desc   = document.getElementById('prod-desc').value.trim();
+    const valor  = document.getElementById('prod-valor').value;
+    const parcOn = document.getElementById('toggle-parc').checked;
+    const parc   = parseInt(document.getElementById('prod-parc').value);
+    const qty    = document.getElementById('prod-qty').value;
+    const email  = document.getElementById('prod-email').value.trim();
 
-    const methods = [...document.querySelectorAll('.method-chip.on')]
+    // Produtos selecionados (CREDIT, DEBIT, PIX)
+    const products = [...document.querySelectorAll('.method-chip.on')]
       .map(m => m.dataset.method);
 
-    // Converte R$ para centavos (inteiro)
+    // Valor em centavos (inteiro)
     const centavos = parseInt(valor.replace(/\D/g, ''));
 
-    // Número de pedido único — usado internamente para rastreio, não enviado à Phoebus no payment-link
-    // const orderNumber = 'NEO-' + Date.now();
+    // expires_at: formato yyyy-MM-ddTHH:mm:ss.000Z aceito pela Phoebus
+    const expires = calcDueDate();
 
-    // payment_methods como array de objetos — formato aceito pela Phoebus ADIQ
-    const methodObjs = methods.map(m => ({ type: m }));
-
+    // Payload exato validado pela Phoebus ADIQ (campos confirmados no projeto anterior)
     const payload = {
-      payment_link_name : name,
-      value             : centavos,         // inteiro em centavos
-      currency_code     : 986,              // inteiro, não string
-      due_date          : dueDate,          // yyyy-MM-ddTHH:mm:ss-03:00
-      payment_methods   : methodObjs,       // [{type:"CREDIT"}]
-      max_installments  : parcOn ? parc : 1,
-      // interest_rate omitido quando zero — Phoebus rejeita 0.0 em alguns contextos
-      three_ds_enabled  : false,
-      antifraud_enabled : false,
+      name             : name,
+      type             : 'PAYMENT',
+      value            : centavos,
+      currency_code    : '986',
+      supported_products: products,
+      sales_limit      : qty ? parseInt(qty) : 0,
+      three_ds_enabled : false,
+      antifraud_enabled: { provider: 'ACQUIRER' },
+      installment: {
+        installment_limit : parcOn ? parc : 1,
+        interest_free     : true,
+        interest_rate     : 0,
+      },
+      customer_config_information: {
+        required_email            : false,
+        required_full_name        : false,
+        required_national_document: false,
+        required_full_address     : false,
+        required_phone_number     : false,
+      },
     };
 
-    if (desc)  payload.description        = desc;
-    if (qty)   payload.quantity_uses      = parseInt(qty);
-    if (email) payload.notification_email = email.toLowerCase().trim();
+    if (desc)    payload.description = desc;
+    if (expires) payload.expires_at  = expires;
+    if (email)   payload.notification_email = email.toLowerCase().trim();
 
     return payload;
   }

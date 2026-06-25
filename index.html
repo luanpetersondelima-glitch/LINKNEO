@@ -85,18 +85,6 @@ hr{border:none;border-top:1px solid #f3f4f6;margin:.85rem 0}
 }
 </style>
 
-<!-- ADIQ Antifraude Fingerprint (produção org_id=k8vif92e) -->
-<script>
-  window._adiqFpId = 'adiq_br' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-  var _fp = document.createElement('script');
-  _fp.type = 'text/javascript';
-  _fp.src = 'https://h.online-metrix.net/fp/tags.js?org_id=k8vif92e&session_id=' + window._adiqFpId;
-  document.head.appendChild(_fp);
-</script>
-<noscript><iframe style="width:100px;height:100px;border:0;position:absolute;top:-5000px;" src="https://h.online-metrix.net/fp/tags.js?org_id=k8vif92e&session_id=adiq_br"></iframe></noscript>
 </head>
 <body>
 
@@ -504,4 +492,18 @@ function shareWhatsApp(){
 </script>
 
 
+
+<!-- ADIQ Antifraude Fingerprint — carregado após JS principal -->
+<script>
+try {
+  window._adiqFpId = 'adiq_br' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(ch) {
+    var r = Math.random() * 16 | 0;
+    return (ch === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  var _fpScript = document.createElement('script');
+  _fpScript.type = 'text/javascript';
+  _fpScript.src = 'https://h.online-metrix.net/fp/tags.js?org_id=k8vif92e&session_id=' + window._adiqFpId;
+  document.body.appendChild(_fpScript);
+} catch(e) { console.warn('fingerprint error:', e); }
+</script>
 </body></html>

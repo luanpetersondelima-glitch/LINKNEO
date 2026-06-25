@@ -374,7 +374,7 @@
         </div>
         <div>
           <div class="card-head-title">Métodos aceitos</div>
-          <div class="card-head-sub">Formas de pagamento habilitadas</div>
+          <div class="card-head-sub">Formas de pagamento e dados do cliente</div>
         </div>
       </div>
       <div class="card-body-p">
@@ -403,8 +403,29 @@
 
         <hr class="summary-divider" style="margin:16px 0"/>
 
+        <label class="lbl" style="margin-bottom:8px">Dados solicitados ao cliente</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px" id="cliente-dados">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer">
+            <input type="checkbox" id="req-nome" checked onchange="updateSummary()"/> Nome completo
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer">
+            <input type="checkbox" id="req-cpf" checked onchange="updateSummary()"/> CPF/CNPJ
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer">
+            <input type="checkbox" id="req-email" checked onchange="updateSummary()"/> E-mail
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer">
+            <input type="checkbox" id="req-fone" checked onchange="updateSummary()"/> Telefone
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer">
+            <input type="checkbox" id="req-end" onchange="updateSummary()"/> Endereço
+          </label>
+        </div>
+
+        <hr class="summary-divider" style="margin:16px 0"/>
+
         <div class="field-group" style="margin-bottom:0">
-          <label class="lbl">E-mail do lojista (notificações)</label>
+          <label class="lbl">E-mail para notificações</label>
           <div class="field">
             <input type="email" id="prod-email" placeholder="email@empresa.com.br" value="operacional@neopagamentos.com.br" oninput="updateSummary()"/>
           </div>
@@ -648,11 +669,11 @@
         interest_rate     : 0.01,
       },
       customer_config_information: {
-        required_email            : true,
-        required_full_name        : false,
-        required_national_document: true,
-        required_full_address     : false,
-        required_phone_number     : false,
+        required_email            : document.getElementById('req-email')?.checked ?? true,
+        required_full_name        : document.getElementById('req-nome')?.checked ?? true,
+        required_national_document: document.getElementById('req-cpf')?.checked ?? true,
+        required_full_address     : document.getElementById('req-end')?.checked ?? false,
+        required_phone_number     : document.getElementById('req-fone')?.checked ?? true,
       },
     };
 

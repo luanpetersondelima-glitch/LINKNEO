@@ -589,14 +589,15 @@
     updateSummary();
   }
 
-  // ── Calcular due_date ──
+  // ── Calcular due_date em horário de Brasília (UTC-3) ──
   function calcDueDate() {
     const chip = document.querySelector('.exp-chip.on');
     const days = parseInt(chip?.dataset.days ?? 1);
     const d = new Date();
     d.setDate(d.getDate() + days);
-    // Formato aceito pela Phoebus: yyyy-MM-ddTHH:mm:ss.000Z
-    return d.toISOString().replace(/\.\d{3}Z$/, '.000Z');
+    // Ajusta para UTC-3 (Brasília) e formata como yyyy-MM-ddTHH:mm:ss.000Z
+    const brt = new Date(d.getTime() - (3 * 60 * 60 * 1000));
+    return brt.toISOString().replace(/\.\d{3}Z$/, '.000Z');
   }
 
   // ── Atualizar resumo ──
@@ -641,32 +642,25 @@
     // Converte R$ para centavos (inteiro)
     const centavos = parseInt(valor.replace(/\D/g, ''));
 
-    // Número de pedido único exigido pela ADIQ
-    const orderNumber = 'NEO-' + Date.now();
+    // Número de pedido único — usado internamente para rastreio, não enviado à Phoebus no payment-link
+    // const orderNumber = 'NEO-' + Date.now();
 
     const payload = {
       payment_link_name : name,
       value             : centavos,
       currency_code     : '986',           // BRL
-      due_date          : dueDate,         // yyyy-MM-ddTHH:mm:ss.000Z
-      payment_methods   : methods,
+      due_date          : dueDate,         // yyyy-MM-ddTHH:mm:ss.000Z (Brasília)
+      payment_methods   : methods,         // ["CREDIT"]
       max_installments  : parcOn ? parc : 1,
-      interest_rate     : 0,               // sem juros
-      order_number      : orderNumber,     // obrigatório ADIQ
-      three_ds_enabled  : false,           // obrigatório ADIQ
-      antifraud_enabled : false,           // obrigatório ADIQ
-      customer_config_information: {
-        required_email             : true,
-        required_full_name         : false,
-        required_national_document : true,
-        required_full_address      : false,
-        required_phone_number      : false,
-      },
+      interest_rate     : 0.0,             // float obrigatório
+      three_ds_enabled  : false,
+      antifraud_enabled : false,
     };
 
-    if (desc)  payload.description         = desc;
-    if (qty)   payload.quantity_uses       = parseInt(qty);
-    if (email) payload.notification_email  = email;
+    if (desc)  payload.description        = desc;
+    if (qty)   payload.quantity_uses      = parseInt(qty);
+    // e-mail sempre lowercase — Phoebus rejeita maiúsculas
+    if (email) payload.notification_email = email.toLowerCase();
 
     return payload;
   }
